@@ -17,6 +17,22 @@
 
 ## 安装
 
+### 一键安装（推荐）
+
+```powershell
+# Windows（PowerShell）
+irm https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.ps1 | iex
+```
+
+```sh
+# macOS / Linux
+bash <(curl -fsSL https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.sh)
+```
+
+脚本自动：预写 `minimumReleaseAgeExclude`（放行 <24h 新版本）→ `dsh plugin add` 安装并自动挂载 → 校验 bundle 注册 → 幂等清理旧手动挂载行。参数：`-Version <v>` 指定版本、`-Restart` 装完重启、`-DryRun` 只打印不写文件。
+
+### 手动安装
+
 官方 `dsh plugin` 方式，三种来源任选（推荐 git / npm，peer 依赖由 pnpm 自动解析）：
 
 ```sh

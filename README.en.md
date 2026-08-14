@@ -17,6 +17,22 @@ A **static Cordis plugin** for [DeepSeek Harness](https://github.com/deepseek-ai
 
 ## Install
 
+### One-liner (recommended)
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.ps1 | iex
+```
+
+```sh
+# macOS / Linux
+bash <(curl -fsSL https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.sh)
+```
+
+The script: pre-writes `minimumReleaseAgeExclude` (allows <24h releases) → `dsh plugin add` installs and auto-mounts → verifies bundle registration → idempotently removes any old manual mount row. Options: `-Version <v>` pin a version, `-Restart` restart after install, `-DryRun` print only.
+
+### Manual
+
 The official `dsh plugin` command, any of three sources (git/npm preferred — pnpm auto-resolves peer deps):
 
 ```sh
