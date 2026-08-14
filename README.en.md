@@ -17,7 +17,15 @@ A **static Cordis plugin** for [DeepSeek Harness](https://github.com/deepseek-ai
 
 ## Install
 
-### One-liner (recommended)
+### npm install (recommended, published)
+
+```sh
+dsh plugin --profile web add @woyeshishen/dsh-vision-plugin
+```
+
+Pulled from the npm registry; peer deps auto-resolve via pnpm. Auto-mounts on install, `dsh --profile web` loads it at startup.
+
+### One-liner
 
 ```powershell
 # Windows (PowerShell)
@@ -31,9 +39,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugi
 
 The script: pre-writes `minimumReleaseAgeExclude` (allows <24h releases) → `dsh plugin add` installs and auto-mounts → verifies bundle registration → idempotently removes any old manual mount row. Options: `-Version <v>` pin a version, `-Restart` restart after install, `-DryRun` print only.
 
-### Manual
-
-The official `dsh plugin` command, any of three sources (git/npm preferred — pnpm auto-resolves peer deps):
+### Other sources
 
 ```sh
 # local path
@@ -41,9 +47,6 @@ dsh plugin --profile web add /abs/path/to/dsh-vision-plugin
 
 # from GitHub (pulls source + the committed lib/ build output)
 dsh plugin --profile web add github:woyeshishen/dsh-vision-plugin
-
-# from npm (after publish)
-dsh plugin --profile web add @woyeshishen/dsh-vision-plugin
 ```
 
 After install, the plugin joins `dsh.profile.bundles` automatically; `dsh --profile web` loads it at startup.

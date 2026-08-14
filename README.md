@@ -17,7 +17,15 @@
 
 ## 安装
 
-### 一键安装（推荐）
+### npm 安装（推荐，已发布）
+
+```sh
+dsh plugin --profile web add @woyeshishen/dsh-vision-plugin
+```
+
+从 npm registry 拉取，peer 依赖由 pnpm 自动解析；安装后自动挂载，`dsh --profile web` 启动即生效。
+
+### 一键安装
 
 ```powershell
 # Windows（PowerShell）
@@ -31,9 +39,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugi
 
 脚本自动：预写 `minimumReleaseAgeExclude`（放行 <24h 新版本）→ `dsh plugin add` 安装并自动挂载 → 校验 bundle 注册 → 幂等清理旧手动挂载行。参数：`-Version <v>` 指定版本、`-Restart` 装完重启、`-DryRun` 只打印不写文件。
 
-### 手动安装
-
-官方 `dsh plugin` 方式，三种来源任选（推荐 git / npm，peer 依赖由 pnpm 自动解析）：
+### 其他来源
 
 ```sh
 # 本地路径
@@ -41,9 +47,6 @@ dsh plugin --profile web add /abs/path/to/dsh-vision-plugin
 
 # 从 GitHub（拉源码 + 已提交的 lib/ 构建产物）
 dsh plugin --profile web add github:woyeshishen/dsh-vision-plugin
-
-# 从 npm（发布后）
-dsh plugin --profile web add @woyeshishen/dsh-vision-plugin
 ```
 
 安装后，插件作为一层自动进入 `dsh.profile.bundles`；`dsh --profile web` 启动即生效。
