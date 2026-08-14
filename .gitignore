@@ -1,0 +1,26 @@
+# --- 依赖与构建产物 ---
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# --- 日志与临时文件 ---
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# --- 环境与密钥（切勿提交真实凭据） ---
+.env
+.env.*
+!.env.example
+.credentials.yaml
+settings.yaml
+
+# --- 编辑器/IDE ---
+.idea/
+.vscode/
+*.suo

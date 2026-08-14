@@ -1,0 +1,96 @@
+{
+  "name": "@woyeshishen/dsh-vision-plugin",
+  "version": "1.0.0",
+  "description": "为 DeepSeek Harness 提供外部视觉模型能力：纯文本主模型通过 describe_image 工具调用外部视觉模型看图，拿到纯文字描述（多模态补全）。静态 Cordis 插件，随 DSH 启动自动加载。",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-api-remotes"
+      ],
+      "platform": "web"
+    }
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "cordis.patch.yml",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "check:legacy": "node scripts/check.mjs"
+  },
+  "license": "Apache-2.0",
+  "author": "woyeshishen",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/woyeshishen/dsh-vision-plugin.git"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "plugin",
+    "vision",
+    "multimodal",
+    "image"
+  ],
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-credentials": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-attachment": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-fs": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-connection": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-settings": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-api-remotes": "^0.1.0-rc.6"
+  },
+  "devDependencies": {
+    "typescript": "~5.6.0",
+    "@types/react": "~18.3.1",
+    "react": "^18.2.0",
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-credentials": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-attachment": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-fs": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-connection": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-settings": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-api-remotes": "^0.1.0-rc.6"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

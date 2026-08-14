@@ -1,0 +1,7 @@
+# dsh-vision-plugin 组合包（bundle）配置层
+# 由 `dsh plugin --profile <name> add` 安装后，作为一层插入 profile 组合。
+# 插件行按包名引用（Node 模块解析到 main: lib/index.js），Client 半经
+# package.json 的 dsh.client 声明与 ./client 子路径由 client-modules 加载。
+- insert:
+    - id: vision-plugin
+      name: '@woyeshishen/dsh-vision-plugin'
