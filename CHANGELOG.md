@@ -2,6 +2,15 @@
 
 本项目的所有重要变更都会记录在此。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [1.0.2] - 2026-08-15
+
+### 修复
+- `install.ps1` 兼容 `irm ... | iex`（去掉 UTF-8 BOM、去掉 `param` 改 `$args` 解析、消息改英文），此前 BOM 与 `param` 会导致一键安装失败。
+
+### 变更
+- `files` 增加 `.gitignore`（npm 包与仓库内容对齐；`package-lock.json` 受 npm 限制不打包）。
+- README 专业化，面向用户（新增 badge、特性表格、分步使用；移除开发者细节）。
+
 ## [1.0.1] - 2026-08-15
 
 ### 新增
