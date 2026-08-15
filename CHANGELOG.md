@@ -2,6 +2,11 @@
 
 本项目的所有重要变更都会记录在此。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [1.0.3] - 2026-08-15
+
+### 变更
+- README 改为英文原版（`README.md`）+ 中文翻译（`README.zh.md`），顶部加语言切换栏。
+
 ## [1.0.2] - 2026-08-15
 
 ### 修复
