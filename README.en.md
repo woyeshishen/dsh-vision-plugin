@@ -17,15 +17,7 @@ A **static Cordis plugin** for [DeepSeek Harness](https://github.com/deepseek-ai
 
 ## Install
 
-### npm install (recommended, published)
-
-```sh
-dsh plugin --profile web add @woyeshishen/dsh-vision-plugin
-```
-
-Pulled from the npm registry; peer deps auto-resolve via pnpm. Auto-mounts on install, `dsh --profile web` loads it at startup.
-
-### One-liner
+### One-liner (recommended)
 
 ```powershell
 # Windows (PowerShell)
@@ -37,19 +29,29 @@ irm https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts
 bash <(curl -fsSL https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.sh)
 ```
 
-The script: pre-writes `minimumReleaseAgeExclude` (allows <24h releases) → `dsh plugin add` installs and auto-mounts → verifies bundle registration → idempotently removes any old manual mount row. Options: `-Version <v>` pin a version, `-Restart` restart after install, `-DryRun` print only.
+The script: pre-writes `minimumReleaseAgeExclude` (allows <24h releases) → `dsh plugin add` installs and auto-mounts → verifies bundle registration → idempotently removes any old manual mount row. Options: `<version>` pin a version, `--restart` restart after install, `--dry-run` print only.
 
-### Other sources
+### dsh plugin command
+
+#### From npm (recommended)
 
 ```sh
-# local path
-dsh plugin --profile web add /abs/path/to/dsh-vision-plugin
+dsh plugin --profile web add @woyeshishen/dsh-vision-plugin
+```
 
-# from GitHub (pulls source + the committed lib/ build output)
+#### From GitHub
+
+```sh
 dsh plugin --profile web add github:woyeshishen/dsh-vision-plugin
 ```
 
-After install, the plugin joins `dsh.profile.bundles` automatically; `dsh --profile web` loads it at startup.
+#### Local path
+
+```sh
+dsh plugin --profile web add /abs/path/to/dsh-vision-plugin
+```
+
+npm / GitHub installs auto-resolve peer deps via pnpm. After install, the plugin joins `dsh.profile.bundles` automatically; `dsh --profile web` loads it at startup.
 
 ## Configure the external vision model
 
