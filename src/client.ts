@@ -128,6 +128,7 @@ function VisionSettings({ api }: { api: Api }) {
       try {
         const resp = await api.llm.discoverModels({
           settingsNs: SETTINGS_NS,
+          provider: PROVIDER,
           baseURL: baseURL.trim(),
           api: 'openai-completions',
           ...(apiKey.trim().length > 0 ? { apiKey: apiKey.trim() } : {}),
