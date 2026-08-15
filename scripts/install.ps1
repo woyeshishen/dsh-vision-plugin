@@ -1,47 +1,58 @@
-﻿# =============================================================================
-# dsh-vision-plugin 一键安装脚本（官方 CLI 方式，Windows PowerShell 5.1+ / pwsh）
+# =============================================================================
+# dsh-vision-plugin one-liner installer (Windows PowerShell 5.1+ / pwsh)
 #
-# 通过 DSH 官方插件命令安装 npm 包并自动挂载：
+# Installs via the official DSH CLI and auto-mounts:
 #   dsh plugin --profile web add @woyeshishen/dsh-vision-plugin@<version>
 #
-# 包内声明了 dsh.bundle.patch（cordis.patch.yml）：CLI 的 bundle 协调会把它
-# 自动加进 profile 的 dsh.profile.bundles，下次启动即挂载——无需手动写
-# cordis.patch.yml 挂载行。
+# The package declares dsh.bundle.patch (cordis.patch.yml), so the CLI's bundle
+# reconciliation adds it to dsh.profile.bundles automatically — no manual
+# cordis.patch.yml row needed.
 #
-# 用法（任选其一）：
-#   # 默认最新版
+# Usage:
+#   # default (latest)
 #   irm https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.ps1 | iex
-#   # 指定版本 / 装完重启
-#   & ([scriptblock]::Create((irm 'https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.ps1'))) -Version 1.0.0 -Restart
-#   # 本地保存后运行
-#   powershell -ExecutionPolicy Bypass -File install.ps1 -Version 1.0.0 -DryRun
+#   # pinned version / restart after install
+#   & ([scriptblock]::Create((irm 'https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.ps1'))) 1.0.1 --restart
+#   # dry-run
+#   & ([scriptblock]::Create((irm 'https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.ps1'))) --dry-run
 #
-# 参数：
-#   -Version     npm 版本号/范围，缺省 latest（自动解析为最新）。
-#   -Restart     装完后尝试 `pm2 restart dsh-web`（无 pm2 时仅提示）。
-#   -DryRun      只打印将要执行的操作，不写任何文件。
+# Args (positional version + flags):
+#   <version>   npm version/range, default latest
+#   --restart   try `pm2 restart dsh-web` after install
+#   --dry-run   print planned actions, write nothing
+#   -h|--help   print help
 #
-# 环境变量（均可省略）：
-#   DSH_HOME     默认 %USERPROFILE%\.dsh
-#   REGISTRY     默认 https://registry.npmjs.org
-#   DSH_CMD      默认优先 PATH 上的 dsh，缺省回退 npx -y --package @deepseek-ai/dsh
+# Env (all optional): DSH_HOME (default %USERPROFILE%\.dsh), REGISTRY (npm), DSH_CMD (dsh command)
 #
-# 说明：
-# - pnpm 11 的 minimumReleaseAge 会拒绝发布 <24h 的新版本。脚本会预写
-#   minimumReleaseAgeExclude（幂等），放行本插件，避免"重跑一次才成功"。
-# - 若之前手动在 cordis.patch.yml 写过挂载行，脚本会幂等移除（避免双挂载）。
-# - 回滚：dsh plugin --profile web remove @woyeshishen/dsh-vision-plugin
+# Notes:
+# - pnpm 11's minimumReleaseAge rejects releases <24h. This script pre-writes
+#   minimumReleaseAgeExclude (idempotent) to allow this package.
+# - Idempotently removes any old manual mount row (id: vision-plugin) to avoid
+#   double-mounting.
+# - Rollback: dsh plugin --profile web remove @woyeshishen/dsh-vision-plugin
 # =============================================================================
-param(
-  [string]$Version = '',
-  [switch]$Restart,
-  [switch]$DryRun
-)
 
 $PKG = '@woyeshishen/dsh-vision-plugin'
 $REGISTRY = if ($env:REGISTRY) { $env:REGISTRY } else { 'https://registry.npmjs.org' }
 
-# DSH_HOME：DSH_HOME 环境变量 > %USERPROFILE% > $HOME
+# ---- parse args (positional + flags; no param() so `irm | iex` works) ----
+$Version = ''
+$Restart = $false
+$DryRun = $false
+foreach ($a in $args) {
+  switch ($a) {
+    '--restart' { $Restart = $true }
+    '--dry-run' { $DryRun = $true }
+    '-h' { Write-Host 'Usage: irm .../install.ps1 | iex   (or with args: ... 1.0.1 --restart --dry-run)'; exit 0 }
+    '--help' { Write-Host 'Usage: irm .../install.ps1 | iex   (or with args: ... 1.0.1 --restart --dry-run)'; exit 0 }
+    default {
+      if ($a -like '-*') { Write-Error "unknown option: $a"; exit 2 }
+      $Version = $a
+    }
+  }
+}
+
+# DSH_HOME: env > %USERPROFILE% > $HOME
 if ($env:DSH_HOME) {
   $DSH_HOME = $env:DSH_HOME
 } elseif ($env:USERPROFILE) {
@@ -57,7 +68,7 @@ function Say([string]$m)  { Write-Host "[install] $m" -ForegroundColor Green }
 function Warn([string]$m) { Write-Host "[warn] $m" -ForegroundColor Yellow }
 function Die([string]$m)  { Write-Host "[error] $m" -ForegroundColor Red; exit 1 }
 
-# 解析版本 -> npm spec（"x.y.z" / "^x.y.z" / latest）
+# Resolve version -> npm spec ("x.y.z" / "^x.y.z" / latest)
 function Resolve-Spec {
   param([string]$Given)
   if ([string]::IsNullOrWhiteSpace($Given) -or $Given -eq 'latest') {
@@ -69,14 +80,13 @@ function Resolve-Spec {
       }
     }
     if ($v) { return ([string]$v).Trim() }
-    Warn '无法联网解析最新版本（npm/pnpm 查询失败），回退为 latest，由 pnpm 直接解析。'
-    Warn '若已知版本号，可显式传入：-Version 1.0.0'
+    Warn 'Could not resolve latest version (npm/pnpm query failed), falling back to latest.'
     return 'latest'
   }
   return $Given
 }
 
-# 组装 dsh CLI：优先 PATH 上的 dsh，缺省 npx 拉官方包
+# Assemble dsh CLI: prefer dsh on PATH, else npx
 function Get-DshCli {
   if ($env:DSH_CMD) { return $env:DSH_CMD }
   if (Get-Command dsh -ErrorAction SilentlyContinue) { return 'dsh' }
@@ -84,34 +94,34 @@ function Get-DshCli {
   return $null
 }
 
-# 前置校验
+# Preflight
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-  Die '未找到 node（DSH 运行需要 Node.js >= 20），请先安装 Node.js 并加入 PATH。'
+  Die 'node not found (DSH needs Node.js >= 20).'
 }
 if (-not (Test-Path $PROFILE_DIR)) {
-  Die "找不到 profile 目录：$PROFILE_DIR（请先安装并运行过一次 dsh web）"
+  Die "profile dir not found: $PROFILE_DIR (install and run dsh web once first)"
 }
 if (-not (Test-Path $WS_YML)) {
-  Die "找不到 $WS_YML（请先初始化 web profile）"
+  Die "missing $WS_YML (initialize the web profile first)"
 }
 
 $SPEC = Resolve-Spec $Version
 $CLI = Get-DshCli
 if (-not $CLI) {
-  Die '未找到 dsh 或 npx。请先安装 DSH（并确保 Node/npm 可用），或用 DSH_CMD 指定。'
+  Die 'dsh or npx not found. Install DSH, or set DSH_CMD.'
 }
-Say "目标：$CLI plugin --profile web add $PKG@$SPEC（profile: $PROFILE_DIR）"
+Say "Target: $CLI plugin --profile web add $PKG@$SPEC (profile: $PROFILE_DIR)"
 
 if ($DryRun) {
-  Say "[dry-run] 步骤 1：确保 $WS_YML 含 minimumReleaseAgeExclude（$PKG）"
-  Say "[dry-run] 步骤 2：执行 $CLI plugin --profile web add $PKG@$SPEC（安装 + bundle 自动注册）"
-  Say "[dry-run] 步骤 3：校验 dsh.profile.bundles 含 $PKG"
-  Say "[dry-run] 步骤 4：幂等移除 $PATCH_YML 里旧的 vision-plugin 手动挂载行（避免双挂载）"
-  if ($Restart) { Say '[dry-run] 步骤 5：pm2 restart dsh-web' } else { Say '[dry-run] 步骤 5：提示用户手动重启 DSH' }
+  Say "[dry-run] step 1: ensure $WS_YML has minimumReleaseAgeExclude ($PKG)"
+  Say "[dry-run] step 2: run $CLI plugin --profile web add $PKG@$SPEC"
+  Say "[dry-run] step 3: verify dsh.profile.bundles contains $PKG"
+  Say "[dry-run] step 4: remove any old manual vision-plugin mount row"
+  if ($Restart) { Say '[dry-run] step 5: pm2 restart dsh-web' } else { Say '[dry-run] step 5: prompt user to restart DSH' }
   exit 0
 }
 
-# 步骤 1：预写 minimumReleaseAgeExclude（幂等），放行 <24h 新版本
+# Step 1: pre-write minimumReleaseAgeExclude (idempotent)
 $wsScript = @'
 const fs = require("fs");
 const p = process.argv[2];
@@ -136,41 +146,36 @@ $wsOut = node $wsJs "$WS_YML" "$PKG" 2>&1
 $wsCode = $LASTEXITCODE
 Remove-Item -LiteralPath $wsJs -Force -ErrorAction SilentlyContinue
 $wsResult = (($wsOut | Out-String)).Trim()
-if ($wsCode -ne 0) { Die "处理 $WS_YML 失败（node 退出码 $wsCode）：$wsResult" }
-if ($wsResult -eq 'updated') {
-  Say "已确保 $WS_YML：minimumReleaseAgeExclude（$PKG）"
-} else {
-  Say 'workspace 设置已就绪，跳过'
-}
+if ($wsCode -ne 0) { Die "failed to patch $WS_YML (node exit $wsCode): $wsResult" }
+if ($wsResult -eq 'updated') { Say "Ensured ${WS_YML}: minimumReleaseAgeExclude ($PKG)" }
+else { Say 'workspace settings already ready, skipped' }
 
-# 步骤 2：官方 CLI 安装 + bundle 自动注册（含挂载）
+# Step 2: official CLI install + bundle auto-registration
 if ($CLI -eq 'dsh') {
   $cliArgs = @('plugin', '--profile', 'web', 'add', "$PKG@$SPEC")
 } else {
   $cliArgs = @('-y', '--package', '@deepseek-ai/dsh', 'dsh', 'plugin', '--profile', 'web', 'add', "$PKG@$SPEC")
 }
-Say "执行 $CLI plugin --profile web add $PKG@$SPEC ..."
+Say "Running $CLI plugin --profile web add $PKG@$SPEC ..."
 $addOut = & $CLI @cliArgs 2>&1
 $addCode = $LASTEXITCODE
 $addOut | ForEach-Object { $_ }
 if ($addCode -ne 0) {
-  Warn 'dsh plugin add 失败。已预写 minimumReleaseAgeExclude，仍失败的可能原因：'
-  Warn '  - 网络/登录问题：npm registry 不可达或需要登录。'
-  Warn "  - 依赖安装冲突：可手动重试 cd $PROFILE_DIR; pnpm install。"
+  Warn 'dsh plugin add failed. Possible causes: network/login, or dependency conflict.'
+  Warn "  retry manually: cd $PROFILE_DIR; pnpm install"
   exit 1
 }
 
-# 步骤 3：校验 bundle 已注册（挂载生效的判据）
+# Step 3: verify bundle registered
 $pkgJson = Get-Content -Raw (Join-Path $PROFILE_DIR 'package.json') | ConvertFrom-Json
 $bundles = $pkgJson.dsh.profile.bundles
 if ($bundles -notcontains $PKG) {
-  Warn 'dsh-vision-plugin 未出现在 dsh.profile.bundles 中——挂载未注册。'
-  Warn '若上面的 pnpm 输出提示版本被拒，请确认 pnpm-workspace.yaml 的 minimumReleaseAgeExclude 后重跑本脚本。'
+  Warn 'dsh-vision-plugin not in dsh.profile.bundles — mount not registered.'
   exit 1
 }
-Say "bundle 已注册：dsh.profile.bundles 包含 $PKG（下次启动自动挂载）"
+Say "bundle registered: dsh.profile.bundles contains $PKG"
 
-# 步骤 4：幂等移除旧的 manual 挂载行（避免与 bundle 双挂载）
+# Step 4: idempotently remove old manual mount row (avoid double mount)
 $mountScript = @'
 const fs = require("fs");
 const p = process.argv[2];
@@ -197,9 +202,8 @@ while (i < lines.length) {
   out.push(line);
   i++;
 }
-if (!removed) {
-  console.log("none");
-} else {
+if (!removed) { console.log("none"); }
+else {
   const t = out.join("\n").replace(/\n{3,}/g, "\n\n");
   fs.writeFileSync(p, t);
   console.log("removed");
@@ -211,27 +215,24 @@ $mountOut = node $mountJs "$PATCH_YML" 2>&1
 $mountCode = $LASTEXITCODE
 Remove-Item -LiteralPath $mountJs -Force -ErrorAction SilentlyContinue
 $mountResult = (($mountOut | Out-String)).Trim()
-if ($mountCode -ne 0) { Die "处理 $PATCH_YML 失败（node 退出码 $mountCode）：$mountResult" }
-if ($mountResult -eq 'removed') {
-  Say "已从 $PATCH_YML 移除旧的 vision-plugin 手动挂载行（bundle 通道接管挂载）"
-} else {
-  Say '无旧手动挂载行，跳过'
-}
+if ($mountCode -ne 0) { Die "failed to patch $PATCH_YML (node exit $mountCode): $mountResult" }
+if ($mountResult -eq 'removed') { Say "removed old vision-plugin manual mount row from $PATCH_YML" }
+else { Say 'no old manual mount row, skipped' }
 
-Say "安装完成：$PKG@$SPEC"
+Say "install complete: $PKG@$SPEC"
 
-# 步骤 5：重启提示
+# Step 5: restart hint
 if ($Restart) {
   if (Get-Command pm2 -ErrorAction SilentlyContinue) {
-    Say '重启 dsh-web（pm2）...'
+    Say 'restarting dsh-web (pm2)...'
     pm2 restart dsh-web
-    if ($LASTEXITCODE -ne 0) { Warn 'pm2 restart 失败，请手动重启 DSH' }
+    if ($LASTEXITCODE -ne 0) { Warn 'pm2 restart failed, restart DSH manually' }
   } else {
-    Warn '未找到 pm2，请手动重启 DSH（如：pm2 restart dsh-web 或 dsh web）'
+    Warn 'pm2 not found, restart DSH manually (pm2 restart dsh-web or dsh web)'
   }
 } else {
-  Say '下一步：重启 DSH 并硬刷新（Ctrl+Shift+R / Cmd+Shift+R）使新副本生效。'
+  Say 'next: restart DSH and hard-refresh (Ctrl+Shift+R).'
   if (Get-Command pm2 -ErrorAction SilentlyContinue) {
-    Say '本机可用：pm2 restart dsh-web（会短暂断开当前页面会话）'
+    Say 'pm2 available: pm2 restart dsh-web (briefly disconnects the page)'
   }
 }

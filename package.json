@@ -37,6 +37,8 @@
     "docs/",
     "cordis.patch.yml",
     "tsconfig.json",
+    ".gitignore",
+    "package-lock.json",
     "AGENTS.md",
     "CONTRIBUTING.md",
     "CHANGELOG.md",
