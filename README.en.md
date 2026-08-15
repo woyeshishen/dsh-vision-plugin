@@ -1,122 +1,88 @@
 # dsh-vision-plugin
 
-> **v1.0.0** · Static Cordis plugin · Apache-2.0
+[![npm version](https://img.shields.io/npm/v/@woyeshishen/dsh-vision-plugin)](https://www.npmjs.com/package/@woyeshishen/dsh-vision-plugin)
+[![license](https://img.shields.io/npm/l/@woyeshishen/dsh-vision-plugin)](LICENSE)
 
-A **static Cordis plugin** for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) that adds **external vision / multimodal** capability: pair a text-only main model (e.g. deepseek) with an OpenAI-compatible external vision model. The main model calls the `describe_image` tool, which hands the image to the vision model and returns a **plain-text description** — closing the "see images" gap.
+Adds **image understanding** to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH): wire up an OpenAI-compatible external vision model, and a text-only main model (e.g. deepseek) can call the `describe_image` tool to hand an image to it and get a **plain-text description** — understanding screenshots, photos, charts, OCR, UIs, and more.
 
-> Core design: **images go only to the secondary model (external vision model); the main model always deals with text.**
+> Design: **images go only to the secondary model (external vision model); the main model always deals with text.**
 
 ## Features
 
-- ✍️ Registers the `describe_image` tool — returns a plain-text description, with a UI card (`read` icon + file location).
-- ⚙️ Settings page "Multimodal Vision": enter URL / API key / pick a model from the endpoint's model list, save to apply.
-- 🔐 Credentials persisted: API key is stored in `.credentials.yaml` (never echoed); config lives in `settings.yaml`.
-- 🌐 Reuses DSH's built-in `dsh-llm-pi-ai` adapter for requests — no hand-written networking code.
-- 🔄 Model list fetched via `api.llm.discoverModels` (`GET /models`).
-- 📦 **Static plugin**: installed via `dsh plugin add`, auto-loads at DSH startup, survives restarts.
+| | |
+| --- | --- |
+| 🖼️ **Image understanding** | The main model calls `describe_image` and gets a plain-text description |
+| ⚙️ **GUI configuration** | Fill in URL / API key / model on a settings page — no config files to edit |
+| 🔒 **Secure credentials** | API key stored in the credential store, never echoed |
+| 📦 **Install once, keep working** | Auto-loads at DSH startup, survives restarts |
 
 ## Install
 
 ### One-liner (recommended)
 
+**Windows (PowerShell)**
+
 ```powershell
-# Windows (PowerShell)
 irm https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.ps1 | iex
 ```
 
+**macOS / Linux**
+
 ```sh
-# macOS / Linux
 bash <(curl -fsSL https://raw.githubusercontent.com/woyeshishen/dsh-vision-plugin/main/scripts/install.sh)
 ```
 
-The script: pre-writes `minimumReleaseAgeExclude` (allows <24h releases) → `dsh plugin add` installs and auto-mounts → verifies bundle registration → idempotently removes any old manual mount row. Options: `<version>` pin a version, `--restart` restart after install, `--dry-run` print only.
-
 ### dsh plugin command
 
-#### From npm (recommended)
+**From npm**
 
 ```sh
 dsh plugin --profile web add @woyeshishen/dsh-vision-plugin
 ```
 
-#### From GitHub
+**From GitHub**
 
 ```sh
 dsh plugin --profile web add github:woyeshishen/dsh-vision-plugin
 ```
 
-#### Local path
+After install, the plugin auto-mounts into the profile; restart DSH (or hot-reload) to activate.
 
-```sh
-dsh plugin --profile web add /abs/path/to/dsh-vision-plugin
-```
+## Usage
 
-npm / GitHub installs auto-resolve peer deps via pnpm. After install, the plugin joins `dsh.profile.bundles` automatically; `dsh --profile web` loads it at startup.
-
-## Configure the external vision model
+### Step 1: Configure the external vision model
 
 Open **Settings → Multimodal Vision**:
 
 | Field | Description |
 | --- | --- |
 | URL (Base URL) | OpenAI-compatible endpoint, e.g. `https://api.example.com/v1` |
-| API key | Secret for the external model (stored in the credential store, never echoed) |
-| Model | Click "Load models" to fetch the list, then pick one |
+| API key | Secret for the external model (stored encrypted, never echoed) |
+| Model | Click "Load models" to fetch and pick from the endpoint |
 
 Click **Save**.
 
-## Use
+### Step 2: Ask the main model to look at an image
 
-Ask the main model to look at an image, for example:
+In a conversation, say:
 
 > Take a look at `D:\path\to\image.png` and describe what's in it.
 
-The main model calls `describe_image` and receives a text description from the external vision model.
+The main model calls `describe_image`, sends the image to the external vision model, and continues reasoning from the returned description.
 
-## Tool parameters
+## Tool
 
-`describe_image`
+### `describe_image`
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `path` | ✅ | Image file path (absolute or workspace-relative); supports png / jpg / jpeg / webp / gif |
+| `path` | ✅ | Image file path; supports png / jpg / jpeg / webp / gif |
 | `prompt` | ❌ | Specific question about the image; defaults to "describe the image in detail" |
 
-## Development
+## Requirements
 
-```sh
-npm install     # install TypeScript and dependencies
-npm run build   # tsc compiles src/index.ts → lib/index.js (client half is hand-written, not compiled)
-npm run check   # tsc --noEmit type check
-```
-
-### File layout
-
-```
-dsh-vision-plugin/
-├── src/
-│   ├── index.ts         Host half: describe_image tool (with presentCall)
-│   └── client.ts        Client half source (reference only, not built)
-├── lib/
-│   ├── index.js         Host build output (tsc)
-│   └── client.js        Client runtime (hand-written client-modules factory)
-├── cordis.patch.yml     bundle layer: plugin row by package name
-├── tsconfig.json        compiles only src/index.ts
-├── docs/
-│   └── architecture.md  Architecture and data flow
-├── scripts/
-│   └── check.mjs        Syntax check
-├── AGENTS.md            Development guide for AI agents
-├── CONTRIBUTING.md      Contribution guide
-├── LICENSE              Apache-2.0
-└── package.json         Package metadata (dsh.bundle + dsh.client + exports + files)
-```
-
-## Constraints
-
-- The endpoint must speak the OpenAI-compatible `/chat/completions` protocol (`api: openai-completions`).
-- The external model must accept image input (declared as `input: ["text","image"]`).
-- Default context window is 128000 and max output is 8192; adjust `profile.models[0]` in `lib/client.js` (`src/client.ts` is reference-only — keep `lib/client.js` in sync).
+- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
+- An OpenAI-compatible (`/chat/completions`), image-capable external vision model
 
 ## License
 
